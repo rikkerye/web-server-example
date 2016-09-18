@@ -13,6 +13,7 @@
 #include <functional>
 #include <iostream>
 #include <sstream>
+#include <string>
 
 namespace SimpleWeb {
     template <class socket_type>
@@ -281,7 +282,7 @@ namespace SimpleWeb {
                 }
             });
         }
-
+       
         bool parse_request(std::shared_ptr<Request> request, std::istream& stream) const {
             std::string line;
             getline(stream, line);
@@ -294,9 +295,14 @@ namespace SimpleWeb {
 
                     size_t protocol_end;
                     if((protocol_end=line.find('/', path_end+1))!=std::string::npos) {
-                        if(line.substr(path_end+1, protocol_end-path_end-1)!="HTTP")
+                        
+                        std::string version = line.substr(protocol_end+1, line.size()-protocol_end-2);
+                        
+                        if(line.substr(path_end+1, protocol_end-path_end-1)!="HTTP" || !isFloat(version)){
                             return false;
-                        request->http_version=line.substr(protocol_end+1, line.size()-protocol_end-2);
+                        }
+                            
+                        request->http_version=version;
                     }
                     else
                         return false;
@@ -322,6 +328,13 @@ namespace SimpleWeb {
                 return false;
             return true;
         }
+        
+        static bool isFloat( std::string &floatString) {
+           std::istringstream iss(floatString);
+           float f;
+           iss >> std::noskipws >> f; // noskipws considers leading whitespace invalid
+           return iss.eof() && !iss.fail(); 
+       }
 
         void find_resource(std::shared_ptr<socket_type> socket, std::shared_ptr<Request> request) {
             //Find path- and method-match, and call write_response
@@ -379,6 +392,7 @@ namespace SimpleWeb {
                 return;
             }
         }
+        
     };
     
     template<class socket_type>
